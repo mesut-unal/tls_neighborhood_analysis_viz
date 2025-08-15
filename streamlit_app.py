@@ -91,7 +91,7 @@ MARKER_GROUPS: "OrderedDict[str, List[str]]" = OrderedDict({
 
 DIRS = folder_templates(postfix)
 
-st.header("p-value barplots by group")
+st.header("Inside vs. outside TLS structure marker intensity differences")
 
 pval_dir = resolve_path(base_dir, DIRS["pval_barplots"])
 
@@ -142,7 +142,7 @@ for category, patterns in MARKER_GROUPS.items():
             col1, col2, col3 = st.columns(3, gap="large")
 
             with col1:
-                st.caption("GMM components")
+                st.caption("Prob. density vs. expression level")
                 gmm_crl = paths["gmm_components"]["CRL"]
                 gmm_dii = paths["gmm_components"]["DII"]
                 if file_exists(gmm_crl):
@@ -151,7 +151,7 @@ for category, patterns in MARKER_GROUPS.items():
                     st.image(gmm_dii, caption=f"{marker} DII gmm_components", use_container_width=True)
 
             with col2:
-                st.caption("TLS cluster violins")
+                st.caption("Marker intensity accross maturation levels")
                 vio_crl = paths["violin"]["CRL"]
                 vio_dii = paths["violin"]["DII"]
                 if file_exists(vio_crl):
@@ -160,7 +160,7 @@ for category, patterns in MARKER_GROUPS.items():
                     st.image(vio_dii, caption=f"{marker} DII violin", use_container_width=True)
 
             with col3:
-                st.caption("Radius profiles")
+                st.caption("Average intensity at different radii")
                 rad_crl = paths["radius"]["CRL"]
                 rad_dii = paths["radius"]["DII"]
                 if file_exists(rad_crl):
