@@ -76,7 +76,7 @@ st.set_page_config(page_title="TLS Results Viewer", layout="wide")
 st.title("TLS Results Viewer")
 
 base_dir = "."
-postfix = "aug14"
+postfix = "sep10"
 
 MARKER_GROUPS: "OrderedDict[str, List[str]]" = OrderedDict({
     "EGFR marker": ["EGFR*"],
