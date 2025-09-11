@@ -28,7 +28,7 @@ def file_exists(path: str) -> bool:
 def find_markers_from_patterns(patterns: List[str], base_dir: str, gmm_dir: str) -> List[str]:
     found = set()
     for pat in patterns:
-        for grp in ("CRL", "DII"):
+        for grp in ("CLR", "DII"):
             suffix = f"_{grp}_gmm_components.png"
             candidates = [
                 resolve_path(base_dir, gmm_dir, f"{pat}{suffix}"),
@@ -49,26 +49,26 @@ def image_paths_for_marker(marker: str, base_dir: str, dirs: Dict[str, str]) -> 
     m_san = sanitize_for_filename(marker)
 
     def try_paths(folder: str, prefix: str, suffix: str) -> Tuple[str, str]:
-        p_crl = resolve_path(base_dir, folder, f"{prefix}_CRL_{suffix}")
+        p_clr = resolve_path(base_dir, folder, f"{prefix}_CLR_{suffix}")
         p_dii = resolve_path(base_dir, folder, f"{prefix}_DII_{suffix}")
-        if not file_exists(p_crl):
-            p_crl_alt = resolve_path(base_dir, folder, f"{m_san}_CRL_{suffix}")
-            if file_exists(p_crl_alt):
-                p_crl = p_crl_alt
+        if not file_exists(p_clr):
+            p_clr_alt = resolve_path(base_dir, folder, f"{m_san}_CLR_{suffix}")
+            if file_exists(p_clr_alt):
+                p_clr = p_clr_alt
         if not file_exists(p_dii):
             p_dii_alt = resolve_path(base_dir, folder, f"{m_san}_DII_{suffix}")
             if file_exists(p_dii_alt):
                 p_dii = p_dii_alt
-        return p_crl, p_dii
+        return p_clr, p_dii
 
-    gmm_crl, gmm_dii = try_paths(dirs["gmm_components"], m_raw, "gmm_components.png")
-    vio_crl, vio_dii = try_paths(dirs["violin"], m_raw, "violin.png")
-    rad_crl, rad_dii = try_paths(dirs["radius_profiles"], m_raw, "radius_profile.png")
+    gmm_clr, gmm_dii = try_paths(dirs["gmm_components"], m_raw, "gmm_components.png")
+    vio_clr, vio_dii = try_paths(dirs["violin"], m_raw, "violin.png")
+    rad_clr, rad_dii = try_paths(dirs["radius_profiles"], m_raw, "radius_profile.png")
 
     return {
-        "gmm_components": {"CRL": gmm_crl, "DII": gmm_dii},
-        "violin": {"CRL": vio_crl, "DII": vio_dii},
-        "radius": {"CRL": rad_crl, "DII": rad_dii},
+        "gmm_components": {"CLR": gmm_clr, "DII": gmm_dii},
+        "violin": {"CLR": vio_clr, "DII": vio_dii},
+        "radius": {"CLR": rad_clr, "DII": rad_dii},
     }
 
 st.set_page_config(page_title="TLS Results Viewer", layout="wide")
@@ -80,11 +80,11 @@ postfix = "aug14"
 
 MARKER_GROUPS: "OrderedDict[str, List[str]]" = OrderedDict({
     "EGFR marker": ["EGFR*"],
-    "Macrophages markers": ["CD11b*", "CD11c*"],
+    "Macrophages markers": ["CD11b*", "CD11c*","CD68*","CD163*"],
     "NK markers": ["CD56*", "CD57*"],
     "Phagocytes markers": ["BCL-2*"],
     "Proliferation markers": ["Ki67*"],
-    "Stroma markers": ["aSMA*", "beta-catenin*", "MMP9*", "MMP12*", "CD44*", "GFAP*", "CD15*"],
+    "Stroma markers": ["aSMA*", "beta-catenin*", "MMP9*", "MMP12*", "CD44*", "GFAP*", "CD15*","Collagen*"],
     "T cell markers": ["CD194*", "GATA3*", "PD1*", "ICOS*", "LAG3*", "FOXP3*"],
     "Vasculatures markers": ["CD31*", "CD34*", "CD44*"],
 })
@@ -95,10 +95,10 @@ st.header("Inside vs. outside TLS structure marker intensity differences")
 
 pval_dir = resolve_path(base_dir, DIRS["pval_barplots"])
 
-crl_files = [
-    "CRL_nascent_pvalue_barplot_kruskal.png",
-    "CRL_intermediate_pvalue_barplot_kruskal.png",
-    "CRL_mature_pvalue_barplot_kruskal.png",
+clr_files = [
+    "CLR_nascent_pvalue_barplot_kruskal.png",
+    "CLR_intermediate_pvalue_barplot_kruskal.png",
+    "CLR_mature_pvalue_barplot_kruskal.png",
 ]
 
 dii_files = [
@@ -107,7 +107,7 @@ dii_files = [
 ]
 
 cols = st.columns(3)
-for i, fname in enumerate(crl_files):
+for i, fname in enumerate(clr_files):
     path = resolve_path(pval_dir, fname)
     if file_exists(path):
         cols[i].image(path, caption=fname, use_container_width=True)
@@ -143,28 +143,28 @@ for category, patterns in MARKER_GROUPS.items():
 
             with col1:
                 st.caption("Prob. density vs. expression level")
-                gmm_crl = paths["gmm_components"]["CRL"]
+                gmm_clr = paths["gmm_components"]["CLR"]
                 gmm_dii = paths["gmm_components"]["DII"]
-                if file_exists(gmm_crl):
-                    st.image(gmm_crl, caption=f"{marker} CRL gmm_components", use_container_width=True)
+                if file_exists(gmm_clr):
+                    st.image(gmm_clr, caption=f"{marker} CLR gmm_components", use_container_width=True)
                 if file_exists(gmm_dii):
                     st.image(gmm_dii, caption=f"{marker} DII gmm_components", use_container_width=True)
 
             with col2:
                 st.caption("Marker intensity accross maturation levels")
-                vio_crl = paths["violin"]["CRL"]
+                vio_clr = paths["violin"]["CLR"]
                 vio_dii = paths["violin"]["DII"]
-                if file_exists(vio_crl):
-                    st.image(vio_crl, caption=f"{marker} CRL violin", use_container_width=True)
+                if file_exists(vio_clr):
+                    st.image(vio_clr, caption=f"{marker} CLR violin", use_container_width=True)
                 if file_exists(vio_dii):
                     st.image(vio_dii, caption=f"{marker} DII violin", use_container_width=True)
 
             with col3:
                 st.caption("Average intensity at different radii")
-                rad_crl = paths["radius"]["CRL"]
+                rad_clr = paths["radius"]["CLR"]
                 rad_dii = paths["radius"]["DII"]
-                if file_exists(rad_crl):
-                    st.image(rad_crl, caption=f"{marker} CRL radius_profile", use_container_width=True)
+                if file_exists(rad_clr):
+                    st.image(rad_clr, caption=f"{marker} CLR radius_profile", use_container_width=True)
                 if file_exists(rad_dii):
                     st.image(rad_dii, caption=f"{marker} DII radius_profile", use_container_width=True)
 
