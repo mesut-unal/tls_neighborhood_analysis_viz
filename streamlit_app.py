@@ -169,3 +169,25 @@ for category, patterns in MARKER_GROUPS.items():
                     st.image(rad_dii, caption=f"{marker} DII radius_profile", use_container_width=True)
 
             st.markdown("---")
+
+
+# -------------------------
+# Marker vs. Cell Types (new bottom section)
+# -------------------------
+
+st.header("Marker vs. Cell Types")
+celltype_folder = resolve_path(base_dir, "marker_vs_celltype_two_panel_nov25")
+
+if os.path.isdir(celltype_folder):
+    imgs = sorted(glob.glob(os.path.join(celltype_folder, "*.png")))
+    if imgs:
+        # show in rows of 3
+        for i in range(0, len(imgs), 3):
+            row = imgs[i:i+3]
+            cols = st.columns(len(row))
+            for c, p in zip(cols, row):
+                c.image(p, caption=os.path.basename(p), use_container_width=True)
+    else:
+        st.info(f"No .png files found in {celltype_folder}")
+else:
+    st.info(f"Folder not found: {celltype_folder}")
