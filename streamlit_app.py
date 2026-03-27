@@ -14,9 +14,9 @@ def sanitize_for_filename(name: str) -> str:
 def folder_templates(postfix: str) -> Dict[str, str]:
     return {
         "pval_barplots": f"tls_pval_barplots_{postfix}",
-        "gmm_components": f"tail_3sig_byMedian_{postfix}_median_plus_3mad",
+        "gmm_components": f"tail_3sig_byMedian_median_plus_3mad_{postfix}",
         "violin": f"tls_violin_by_tls_cluster_{postfix}",
-        "radius_profiles": f"tls_radius_profiles_grouped_variation_gmmMedian_allPatients_{postfix}_inwardLimit2",
+        "radius_profiles": f"tls_radius_profiles_grouped_variation_gmmMedian_allPatients_{postfix}",
     }
 
 def resolve_path(base_dir: str, *parts: str) -> str:
@@ -29,7 +29,7 @@ def find_markers_from_patterns(patterns: List[str], base_dir: str, gmm_dir: str)
     found = set()
     for pat in patterns:
         for grp in ("CLR", "DII"):
-            suffix = f"_{grp}_gmm_components.png"
+            suffix = f"_{grp}_gmm_components.pdf"
             candidates = [
                 resolve_path(base_dir, gmm_dir, f"{pat}{suffix}"),
                 resolve_path(base_dir, gmm_dir, f"{sanitize_for_filename(pat)}{suffix}"),
@@ -37,7 +37,7 @@ def find_markers_from_patterns(patterns: List[str], base_dir: str, gmm_dir: str)
             for c in candidates:
                 for path in glob.glob(c):
                     fname = os.path.basename(path)
-                    end = f"_{grp}_gmm_components.png"
+                    end = f"_{grp}_gmm_components.pdf"
                     if fname.endswith(end):
                         base = fname[: -len(end)]
                         found.add(base)
@@ -61,9 +61,9 @@ def image_paths_for_marker(marker: str, base_dir: str, dirs: Dict[str, str]) -> 
                 p_dii = p_dii_alt
         return p_clr, p_dii
 
-    gmm_clr, gmm_dii = try_paths(dirs["gmm_components"], m_raw, "gmm_components.png")
-    vio_clr, vio_dii = try_paths(dirs["violin"], m_raw, "violin.png")
-    rad_clr, rad_dii = try_paths(dirs["radius_profiles"], m_raw, "radius_profile.png")
+    gmm_clr, gmm_dii = try_paths(dirs["gmm_components"], m_raw, "gmm_components.pdf")
+    vio_clr, vio_dii = try_paths(dirs["violin"], m_raw, "violin.pdf")
+    rad_clr, rad_dii = try_paths(dirs["radius_profiles"], m_raw, "radius_profile.pdf")
 
     return {
         "gmm_components": {"CLR": gmm_clr, "DII": gmm_dii},
@@ -76,7 +76,7 @@ st.set_page_config(page_title="TLS Results Viewer", layout="wide")
 st.title("TLS Results Viewer")
 
 base_dir = "."
-postfix = "sep10"
+postfix = "_26MAR2026"
 
 MARKER_GROUPS: "OrderedDict[str, List[str]]" = OrderedDict({
     "EGFR marker": ["EGFR*"],
@@ -96,14 +96,14 @@ st.header("Inside vs. outside TLS structure marker intensity differences")
 pval_dir = resolve_path(base_dir, DIRS["pval_barplots"])
 
 clr_files = [
-    "CLR_nascent_pvalue_barplot_kruskal.png",
-    "CLR_intermediate_pvalue_barplot_kruskal.png",
-    "CLR_mature_pvalue_barplot_kruskal.png",
+    "CLR_nascent_pvalue_barplot_kruskal.pdf",
+    "CLR_intermediate_pvalue_barplot_kruskal.pdf",
+    "CLR_mature_pvalue_barplot_kruskal.pdf",
 ]
 
 dii_files = [
-    "DII_nascent_pvalue_barplot_kruskal.png",
-    "DII_intermediate_pvalue_barplot_kruskal.png",
+    "DII_nascent_pvalue_barplot_kruskal.pdf",
+    "DII_intermediate_pvalue_barplot_kruskal.pdf",
 ]
 
 cols = st.columns(3)
@@ -176,10 +176,10 @@ for category, patterns in MARKER_GROUPS.items():
 # -------------------------
 
 st.header("Marker vs. Cell Types")
-celltype_folder = resolve_path(base_dir, "marker_vs_celltype_two_panel_nov25")
+celltype_folder = resolve_path(base_dir,f"marker_vs_celltype_two_panel_{postfix}/cell_type")
 
 if os.path.isdir(celltype_folder):
-    imgs = sorted(glob.glob(os.path.join(celltype_folder, "*.png")))
+    imgs = sorted(glob.glob(os.path.join(celltype_folder, "*.pdf")))
     if imgs:
         # show in rows of 3
         for i in range(0, len(imgs), 3):
@@ -188,6 +188,27 @@ if os.path.isdir(celltype_folder):
             for c, p in zip(cols, row):
                 c.image(p, caption=os.path.basename(p), use_container_width=True)
     else:
-        st.info(f"No .png files found in {celltype_folder}")
+        st.info(f"No .pdf files found in {celltype_folder}")
+else:
+    st.info(f"Folder not found: {celltype_folder}")
+
+# -------------------------
+# Marker vs. Cell State (new bottom section)
+# -------------------------
+
+st.header("Marker vs. Cell States")
+celltype_folder = resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}/cell_state")
+
+if os.path.isdir(celltype_folder):
+    imgs = sorted(glob.glob(os.path.join(celltype_folder, "*.pdf")))
+    if imgs:
+        # show in rows of 3
+        for i in range(0, len(imgs), 3):
+            row = imgs[i:i+3]
+            cols = st.columns(len(row))
+            for c, p in zip(cols, row):
+                c.image(p, caption=os.path.basename(p), use_container_width=True)
+    else:
+        st.info(f"No .pdf files found in {celltype_folder}")
 else:
     st.info(f"Folder not found: {celltype_folder}")
