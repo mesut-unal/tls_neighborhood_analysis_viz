@@ -195,7 +195,7 @@ for category, patterns in MARKER_GROUPS.items():
 
 # ── Marker vs. Cell Types ─────────────────────────────────────────────────────
 st.header("Marker vs. Cell Types")
-celltype_folder = resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}/cell_type")
+celltype_folder = resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}", "cell_type")
 
 if os.path.isdir(celltype_folder):
     imgs = sorted(glob.glob(os.path.join(celltype_folder, "*.pdf")))
@@ -212,7 +212,7 @@ else:
 
 # ── Marker vs. Cell States ────────────────────────────────────────────────────
 st.header("Marker vs. Cell States")
-cellstate_folder = resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}/cell_state")
+cellstate_folder = resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}", "cell_state")
 
 if os.path.isdir(cellstate_folder):
     imgs = sorted(glob.glob(os.path.join(cellstate_folder, "*.pdf")))
