@@ -1,15 +1,19 @@
 import os
 import glob
+import io
 from collections import OrderedDict
 from typing import List, Dict, Tuple
 
 import streamlit as st
+from pdf2image import convert_from_path
+
 
 def sanitize_for_filename(name: str) -> str:
     out = name.replace(" ", "_")
     for ch in [":", "/", "\\"]:
         out = out.replace(ch, "")
     return out
+
 
 def folder_templates(postfix: str) -> Dict[str, str]:
     return {
@@ -19,11 +23,36 @@ def folder_templates(postfix: str) -> Dict[str, str]:
         "radius_profiles": f"tls_radius_profiles_grouped_variation_gmmMedian_allPatients_{postfix}",
     }
 
+
 def resolve_path(base_dir: str, *parts: str) -> str:
     return os.path.join(base_dir, *parts)
 
+
 def file_exists(path: str) -> bool:
     return os.path.isfile(path)
+
+
+def show_pdf_as_image(container, path: str, caption: str):
+    try:
+        pages = convert_from_path(path, dpi=150, first_page=1, last_page=1)
+        buf = io.BytesIO()
+        pages[0].save(buf, format="PNG")
+        buf.seek(0)
+
+        container.image(buf.getvalue(), caption=caption, width="stretch")
+
+        with open(path, "rb") as f:
+            pdf_bytes = f.read()
+        container.download_button(
+            label=f"⬇️ Download PDF",
+            data=pdf_bytes,
+            file_name=os.path.basename(path),
+            mime="application/pdf",
+            key=f"dl_{path}",
+        )
+    except Exception as e:
+        container.error(f"Could not render {os.path.basename(path)}: {e}")
+
 
 def find_markers_from_patterns(patterns: List[str], base_dir: str, gmm_dir: str) -> List[str]:
     found = set()
@@ -43,6 +72,7 @@ def find_markers_from_patterns(patterns: List[str], base_dir: str, gmm_dir: str)
                         found.add(base)
                         break
     return sorted(found)
+
 
 def image_paths_for_marker(marker: str, base_dir: str, dirs: Dict[str, str]) -> Dict[str, Dict[str, str]]:
     m_raw = marker
@@ -71,8 +101,8 @@ def image_paths_for_marker(marker: str, base_dir: str, dirs: Dict[str, str]) -> 
         "radius": {"CLR": rad_clr, "DII": rad_dii},
     }
 
-st.set_page_config(page_title="TLS Results Viewer", layout="wide")
 
+st.set_page_config(page_title="TLS Results Viewer", layout="wide")
 st.title("TLS Results Viewer")
 
 base_dir = "."
@@ -80,17 +110,18 @@ postfix = "26MAR2026"
 
 MARKER_GROUPS: "OrderedDict[str, List[str]]" = OrderedDict({
     "EGFR marker": ["EGFR*"],
-    "Macrophages markers": ["CD11b*", "CD11c*","CD68*","CD163*"],
+    "Macrophages markers": ["CD11b*", "CD11c*", "CD68*", "CD163*"],
     "NK markers": ["CD56*", "CD57*"],
     "Phagocytes markers": ["BCL-2*"],
     "Proliferation markers": ["Ki67*"],
-    "Stroma markers": ["aSMA*", "beta-catenin*", "MMP9*", "MMP12*", "CD44*", "GFAP*", "CD15*","Collagen*"],
+    "Stroma markers": ["aSMA*", "beta-catenin*", "MMP9*", "MMP12*", "CD44*", "GFAP*", "CD15*", "Collagen*"],
     "T cell markers": ["CD194*", "GATA3*", "PD1*", "ICOS*", "LAG3*", "FOXP3*"],
     "Vasculatures markers": ["CD31*", "CD34*", "CD44*"],
 })
 
 DIRS = folder_templates(postfix)
 
+# ── p-value barplots ──────────────────────────────────────────────────────────
 st.header("Inside vs. outside TLS structure marker intensity differences")
 
 pval_dir = resolve_path(base_dir, DIRS["pval_barplots"])
@@ -100,7 +131,6 @@ clr_files = [
     "CLR_intermediate_pvalue_barplot_kruskal.pdf",
     "CLR_mature_pvalue_barplot_kruskal.pdf",
 ]
-
 dii_files = [
     "DII_nascent_pvalue_barplot_kruskal.pdf",
     "DII_intermediate_pvalue_barplot_kruskal.pdf",
@@ -110,7 +140,7 @@ cols = st.columns(3)
 for i, fname in enumerate(clr_files):
     path = resolve_path(pval_dir, fname)
     if file_exists(path):
-        cols[i].image(path, caption=fname, use_container_width=True)
+        show_pdf_as_image(cols[i], path, fname)
     else:
         cols[i].info(f"Missing: {path}")
 
@@ -118,16 +148,16 @@ cols = st.columns(3)
 for i, fname in enumerate(dii_files):
     path = resolve_path(pval_dir, fname)
     if file_exists(path):
-        cols[i].image(path, caption=fname, use_container_width=True)
+        show_pdf_as_image(cols[i], path, fname)
     else:
         cols[i].info(f"Missing: {path}")
 
 st.divider()
 
+# ── per-marker panels ─────────────────────────────────────────────────────────
 st.header("Marker categories")
 
 for category, patterns in MARKER_GROUPS.items():
-    # Using unsafe_allow_html to style the expander header text without showing HTML tags
     with st.expander(label=category, expanded=False):
         st.markdown(f"<h3 style='font-size:20px; font-weight:bold; margin-top:0'>{category}</h3>", unsafe_allow_html=True)
         markers = find_markers_from_patterns(patterns, base_dir, DIRS["gmm_components"])
@@ -138,77 +168,61 @@ for category, patterns in MARKER_GROUPS.items():
         for marker in markers:
             st.subheader(marker)
             paths = image_paths_for_marker(marker, base_dir, DIRS)
-
             col1, col2, col3 = st.columns(3, gap="large")
 
             with col1:
                 st.caption("Prob. density vs. expression level")
-                gmm_clr = paths["gmm_components"]["CLR"]
-                gmm_dii = paths["gmm_components"]["DII"]
-                if file_exists(gmm_clr):
-                    st.image(gmm_clr, caption=f"{marker} CLR gmm_components", use_container_width=True)
-                if file_exists(gmm_dii):
-                    st.image(gmm_dii, caption=f"{marker} DII gmm_components", use_container_width=True)
+                for grp in ("CLR", "DII"):
+                    p = paths["gmm_components"][grp]
+                    if file_exists(p):
+                        show_pdf_as_image(st, p, f"{marker} {grp} gmm_components")
 
             with col2:
-                st.caption("Marker intensity accross maturation levels")
-                vio_clr = paths["violin"]["CLR"]
-                vio_dii = paths["violin"]["DII"]
-                if file_exists(vio_clr):
-                    st.image(vio_clr, caption=f"{marker} CLR violin", use_container_width=True)
-                if file_exists(vio_dii):
-                    st.image(vio_dii, caption=f"{marker} DII violin", use_container_width=True)
+                st.caption("Marker intensity across maturation levels")
+                for grp in ("CLR", "DII"):
+                    p = paths["violin"][grp]
+                    if file_exists(p):
+                        show_pdf_as_image(st, p, f"{marker} {grp} violin")
 
             with col3:
                 st.caption("Average intensity at different radii")
-                rad_clr = paths["radius"]["CLR"]
-                rad_dii = paths["radius"]["DII"]
-                if file_exists(rad_clr):
-                    st.image(rad_clr, caption=f"{marker} CLR radius_profile", use_container_width=True)
-                if file_exists(rad_dii):
-                    st.image(rad_dii, caption=f"{marker} DII radius_profile", use_container_width=True)
+                for grp in ("CLR", "DII"):
+                    p = paths["radius"][grp]
+                    if file_exists(p):
+                        show_pdf_as_image(st, p, f"{marker} {grp} radius_profile")
 
             st.markdown("---")
 
-
-# -------------------------
-# Marker vs. Cell Types (new bottom section)
-# -------------------------
-
+# ── Marker vs. Cell Types ─────────────────────────────────────────────────────
 st.header("Marker vs. Cell Types")
-celltype_folder = resolve_path(base_dir,f"marker_vs_celltype_two_panel_{postfix}/cell_type")
+celltype_folder = resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}/cell_type")
 
 if os.path.isdir(celltype_folder):
     imgs = sorted(glob.glob(os.path.join(celltype_folder, "*.pdf")))
     if imgs:
-        # show in rows of 3
         for i in range(0, len(imgs), 3):
             row = imgs[i:i+3]
             cols = st.columns(len(row))
             for c, p in zip(cols, row):
-                c.image(p, caption=os.path.basename(p), use_container_width=True)
+                show_pdf_as_image(c, p, os.path.basename(p))
     else:
         st.info(f"No .pdf files found in {celltype_folder}")
 else:
     st.info(f"Folder not found: {celltype_folder}")
 
-# -------------------------
-# Marker vs. Cell State (new bottom section)
-# -------------------------
-
+# ── Marker vs. Cell States ────────────────────────────────────────────────────
 st.header("Marker vs. Cell States")
-celltype_folder = resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}/cell_state")
+cellstate_folder = resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}/cell_state")
 
-if os.path.isdir(celltype_folder):
-    imgs = sorted(glob.glob(os.path.join(celltype_folder, "*.pdf")))
+if os.path.isdir(cellstate_folder):
+    imgs = sorted(glob.glob(os.path.join(cellstate_folder, "*.pdf")))
     if imgs:
-        # show in rows of 3
         for i in range(0, len(imgs), 3):
             row = imgs[i:i+3]
             cols = st.columns(len(row))
             for c, p in zip(cols, row):
-                c.image(p, caption=os.path.basename(p), use_container_width=True)
+                show_pdf_as_image(c, p, os.path.basename(p))
     else:
-        st.info(f"No .pdf files found in {celltype_folder}")
+        st.info(f"No .pdf files found in {cellstate_folder}")
 else:
-    st.info(f"Folder not found: {celltype_folder}")
+    st.info(f"Folder not found: {cellstate_folder}")
