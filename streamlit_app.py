@@ -194,35 +194,84 @@ for category, patterns in MARKER_GROUPS.items():
             st.markdown("---")
 
 # ── Marker vs. Cell Types ─────────────────────────────────────────────────────
-st.header("Marker vs. Cell Types")
-celltype_folder = resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}", "cell_type")
+# st.header("Marker vs. Cell Types")
+# celltype_folder = resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}", "cell_type")
 
-if os.path.isdir(celltype_folder):
-    imgs = sorted(glob.glob(os.path.join(celltype_folder, "*.pdf")))
-    if imgs:
-        for i in range(0, len(imgs), 3):
-            row = imgs[i:i+3]
-            cols = st.columns(len(row))
-            for c, p in zip(cols, row):
-                show_pdf_as_image(c, p, os.path.basename(p))
-    else:
-        st.info(f"No .pdf files found in {celltype_folder}")
-else:
-    st.info(f"Folder not found: {celltype_folder}")
+# if os.path.isdir(celltype_folder):
+#     imgs = sorted(glob.glob(os.path.join(celltype_folder, "*.pdf")))
+#     if imgs:
+#         for i in range(0, len(imgs), 3):
+#             row = imgs[i:i+3]
+#             cols = st.columns(len(row))
+#             for c, p in zip(cols, row):
+#                 show_pdf_as_image(c, p, os.path.basename(p))
+#     else:
+#         st.info(f"No .pdf files found in {celltype_folder}")
+# else:
+#     st.info(f"Folder not found: {celltype_folder}")
+
+# # ── Marker vs. Cell States ────────────────────────────────────────────────────
+# st.header("Marker vs. Cell States")
+# cellstate_folder = resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}", "cell_state")
+
+# if os.path.isdir(cellstate_folder):
+#     imgs = sorted(glob.glob(os.path.join(cellstate_folder, "*.pdf")))
+#     if imgs:
+#         for i in range(0, len(imgs), 3):
+#             row = imgs[i:i+3]
+#             cols = st.columns(len(row))
+#             for c, p in zip(cols, row):
+#                 show_pdf_as_image(c, p, os.path.basename(p))
+#     else:
+#         st.info(f"No .pdf files found in {cellstate_folder}")
+# else:
+#     st.info(f"Folder not found: {cellstate_folder}")
+
+def show_maturation_section(header: str, section_folder: str):
+    st.header(header)
+    stages = ["nascent", "intermediate", "mature"]
+
+    if not os.path.isdir(section_folder):
+        st.info(f"Folder not found: {section_folder}")
+        return
+
+    # Collect all unique marker basenames across stages (e.g. "CD34_CLR_vs_DII")
+    all_files = {}
+    for stage in stages:
+        stage_dir = resolve_path(section_folder, stage)
+        if os.path.isdir(stage_dir):
+            for p in sorted(glob.glob(os.path.join(stage_dir, "*.pdf"))):
+                # strip _{stage}_cell_type.pdf or _{stage}_cell_state.pdf suffix
+                fname = os.path.basename(p)
+                key = fname  # use full filename as row key since names encode the marker
+                all_files.setdefault(fname.replace(f"_{stage}_", "_STAGE_"), {})[stage] = p
+
+    if not all_files:
+        st.info(f"No .pdf files found under {section_folder}")
+        return
+
+    col_headers = st.columns(3)
+    for col, stage in zip(col_headers, stages):
+        col.markdown(f"**{stage.capitalize()}**")
+
+    for key, stage_paths in all_files.items():
+        cols = st.columns(3)
+        for col, stage in zip(cols, stages):
+            p = stage_paths.get(stage)
+            if p and file_exists(p):
+                show_pdf_as_image(col, p, os.path.basename(p))
+            else:
+                col.info(f"Missing: {stage}")
+
+
+# ── Marker vs. Cell Types ─────────────────────────────────────────────────────
+show_maturation_section(
+    "Marker vs. Cell Types",
+    resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}", "cell_type"),
+)
 
 # ── Marker vs. Cell States ────────────────────────────────────────────────────
-st.header("Marker vs. Cell States")
-cellstate_folder = resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}", "cell_state")
-
-if os.path.isdir(cellstate_folder):
-    imgs = sorted(glob.glob(os.path.join(cellstate_folder, "*.pdf")))
-    if imgs:
-        for i in range(0, len(imgs), 3):
-            row = imgs[i:i+3]
-            cols = st.columns(len(row))
-            for c, p in zip(cols, row):
-                show_pdf_as_image(c, p, os.path.basename(p))
-    else:
-        st.info(f"No .pdf files found in {cellstate_folder}")
-else:
-    st.info(f"Folder not found: {cellstate_folder}")
+show_maturation_section(
+    "Marker vs. Cell States",
+    resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}", "cell_state"),
+)
