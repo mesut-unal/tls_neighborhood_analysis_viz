@@ -38,13 +38,12 @@ def show_pdf_as_image(container, path: str, caption: str):
         buf = io.BytesIO()
         pages[0].save(buf, format="PNG")
         buf.seek(0)
-
-        container.image(buf.getvalue(), caption=caption, width="stretch")
+        container.image(buf.getvalue(), caption=caption, use_column_width=True)
 
         with open(path, "rb") as f:
             pdf_bytes = f.read()
         container.download_button(
-            label=f"⬇️ Download PDF",
+            label="⬇️ Download PDF",
             data=pdf_bytes,
             file_name=os.path.basename(path),
             mime="application/pdf",
@@ -245,7 +244,7 @@ def show_maturation_section(header: str, section_folder: str):
         return
 
     # Column headers
-    col_left, col_right = st.columns(2)
+    col_left, col_right = st.columns([3, 1.0]) 
     col_left.markdown("**Cell Type**")
     col_right.markdown("**Cell State**")
 
