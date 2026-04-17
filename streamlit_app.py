@@ -267,11 +267,11 @@ def show_maturation_section(header: str, section_folder: str):
 # ── Marker vs. Cell Types ─────────────────────────────────────────────────────
 show_maturation_section(
     "Marker vs. Cell Types",
-    resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}", "cell_type"),
+    resolve_path(base_dir, f"marker_vs_celltype_two_panel_by_tls_{postfix}", "cell_type"),
 )
 
 # ── Marker vs. Cell States ────────────────────────────────────────────────────
 show_maturation_section(
     "Marker vs. Cell States",
-    resolve_path(base_dir, f"marker_vs_celltype_two_panel_{postfix}", "cell_state"),
+    resolve_path(base_dir, f"marker_vs_celltype_two_panel_by_tls_{postfix}", "cell_state"),
 )
