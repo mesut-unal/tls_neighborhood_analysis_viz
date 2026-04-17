@@ -229,49 +229,34 @@ for category, patterns in MARKER_GROUPS.items():
 
 def show_maturation_section(header: str, section_folder: str):
     st.header(header)
-    stages = ["nascent", "intermediate", "mature"]
 
     if not os.path.isdir(section_folder):
         st.info(f"Folder not found: {section_folder}")
         return
 
-    # Collect all unique marker basenames across stages (e.g. "CD34_CLR_vs_DII")
-    all_files = {}
-    for stage in stages:
-        stage_dir = resolve_path(section_folder, stage)
-        if os.path.isdir(stage_dir):
-            for p in sorted(glob.glob(os.path.join(stage_dir, "*.pdf"))):
-                # strip _{stage}_cell_type.pdf or _{stage}_cell_state.pdf suffix
-                fname = os.path.basename(p)
-                key = fname  # use full filename as row key since names encode the marker
-                all_files.setdefault(fname.replace(f"_{stage}_", "_STAGE_"), {})[stage] = p
+    pdf_files = sorted(glob.glob(os.path.join(section_folder, "*.pdf")))
 
-    if not all_files:
+    if not pdf_files:
         st.info(f"No .pdf files found under {section_folder}")
         return
 
-    col_headers = st.columns(3)
-    for col, stage in zip(col_headers, stages):
-        col.markdown(f"**{stage.capitalize()}**")
-
-    for key, stage_paths in all_files.items():
-        cols = st.columns(3)
-        for col, stage in zip(cols, stages):
-            p = stage_paths.get(stage)
-            if p and file_exists(p):
-                show_pdf_as_image(col, p, os.path.basename(p))
-            else:
-                col.info(f"Missing: {stage}")
+    for p in pdf_files:
+        fname = os.path.basename(p)
+        # Extract marker name from pattern: {MARKER}_CLR_vs_DII_allstages_{cell_type|cell_state}.pdf
+        marker = fname.split("_CLR_vs_DII_")[0]
+        subtitle = marker.replace("_", " ")
+        st.subheader(subtitle)
+        show_pdf_as_image(st, p, fname)
 
 
 # ── Marker vs. Cell Types ─────────────────────────────────────────────────────
 show_maturation_section(
     "Marker vs. Cell Types",
-    resolve_path(base_dir, f"marker_vs_celltype_two_panel_by_tls_{postfix}", "cell_type"),
+    resolve_path(base_dir, f"marker_vs_celltype_two_panel_by_tlstogether_{postfix}", "cell_type"),
 )
 
 # ── Marker vs. Cell States ────────────────────────────────────────────────────
 show_maturation_section(
     "Marker vs. Cell States",
-    resolve_path(base_dir, f"marker_vs_celltype_two_panel_by_tls_{postfix}", "cell_state"),
+    resolve_path(base_dir, f"marker_vs_celltype_two_panel_by_tlstogether_{postfix}", "cell_state"),
 )
